@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.pytest_cache/
+
+# Local environments
+.venv/
+venv/
+env/
+.env
+
+# Kaggle raw data
+data/train.csv
+data/test.csv
+data/sample_submission.csv
+
+# Large local artifacts that are reproducible from the notebook
+outputs/oof_*.csv
+outputs/pred_*.csv
+
+# Keep final public-facing result files
+!outputs/submission_xgb_optuna50_multiseed.csv
+!outputs/experiment_log.csv
+!outputs/best_result_summary.csv

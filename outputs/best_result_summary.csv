@@ -1,0 +1,22 @@
+item,value
+best_model,XGBoost Optuna50 MultiSeed
+features,FE
+target_col,Churn
+id_col,id
+oof_auc,0.917168
+submission_file,outputs/submission_xgb_optuna50_multiseed.csv
+oof_file,outputs/oof_xgb_optuna50_multiseed.csv
+pred_file,outputs/pred_xgb_optuna50_multiseed.csv
+submission_rows,254655
+sample_submission_rows,254655
+oof_rows,594194
+pred_rows,254655
+columns_match_sample_submission,True
+prediction_range_ok,True
+missing_values,0
+infinite_values,0
+prediction_min,0.00007488927141301766
+prediction_max,0.9899883845022748
+prediction_mean,0.2181675594254702
+prediction_std,0.27616851335938775
+notes,线上验证后保留当前最佳版本；fine pseudo blend 未涨，相关实验产物已清理

@@ -1,0 +1,2 @@
+experiment_id,model,features,cv_auc,oof_auc,std_auc,submission_file,notes
+20260611_090544,XGBoost Optuna50 MultiSeed,FE,,0.917168,,outputs/submission_xgb_optuna50_multiseed.csv,"使用 XGBoost Optuna 50 trials 的最佳参数，并进行 7 seeds 平均；当前线上验证后的最佳保留版本"
