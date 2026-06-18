@@ -1,94 +1,81 @@
-# Kaggle 客户流失预测项目
+# Kaggle 客户流失预测
 
-这是一个 Kaggle 客户流失预测项目，目标是根据用户特征预测二分类目标 `Churn`。
+![Result Card](assets/result_card.png)
 
-当前项目已经完成 baseline、特征工程、三模型融合、Optuna 调参、多 seed 训练和若干融合实验。经过线上提交验证后，最终保留当前表现最好的版本：
+## 项目一句话
 
-`outputs/submission_xgb_optuna50_multiseed.csv`
+根据客户属性预测是否流失，目标列为 Churn。
 
-## 当前最佳结果
+这个项目不是简单跑一个 baseline，而是围绕 **数据清洗 -> 特征工程 -> 稳定验证 -> 模型融合 -> 线上结果复盘** 做成一条完整建模链路。核心目标是：让模型不仅分数高，而且每一步为什么有效都能讲清楚。
+
+## 当前结果
 
 | 项目 | 内容 |
-|---|---|
-| 最佳模型 | XGBoost Optuna50 MultiSeed |
-| 特征版本 | FE |
-| 目标列 | `Churn` |
-| ID 列 | `id` |
-| OOF AUC | `0.917168` |
-| 最佳提交文件 | `outputs/submission_xgb_optuna50_multiseed.csv` |
-| 说明 | 使用 XGBoost Optuna 50 trials 的最佳参数，并进行 7 seeds 平均 |
+| --- | --- |
+| Competition | `Kaggle Playground / Churn Binary Classification` |
+| Metric | `ROC-AUC` |
+| Best Submission | `outputs/submission_xgb_optuna50_multiseed.csv` |
+| Best Score | OOF AUC 0.917168 |
+| Validation / Extra | 线上验证后保留最佳 |
+| Status | 稳定最佳版本已归档 |
 
-## 最终保留文件
+## 数据清洗
 
-```text
-kaggle_churn_project/
-├── data/
-│   ├── train.csv
-│   ├── test.csv
-│   └── sample_submission.csv
-├── notebooks/
-│   └── baseline.ipynb
-├── outputs/
-│   ├── oof_xgb_optuna50_multiseed.csv
-│   ├── pred_xgb_optuna50_multiseed.csv
-│   ├── submission_xgb_optuna50_multiseed.csv
-│   ├── experiment_log.csv
-│   └── best_result_summary.csv
-├── src/
-│   ├── feature.py
-│   ├── train.py
-│   └── utils.py
-├── README.md
-└── requirements.txt
+- 统一识别 id 与 Churn，确保二者不进入训练特征。
+- 检查 submission 行数、列顺序、缺失值、无穷值和预测范围。
+- 类别特征统一编码，训练集和测试集合并后再拆分，避免编码错位。
+
+## 特征工程亮点
+
+- 在 baseline 特征上构造 FE 版本，并复用同一套 StratifiedKFold 验证框架。
+- 保留类别信息给 CatBoost，同时为 LightGBM/XGBoost 准备数值化版本。
+- 围绕用户状态、消费/服务变量做交叉、分箱和频次类增强，强化模型对高风险客户群的识别。
+
+这部分是项目最重要的地方：特征不是随便堆出来的，而是尽量贴近业务或数据生成逻辑。我的思路是先问“这个变量为什么会影响目标”，再把这个想法翻译成模型能理解的数值、类别、比例、交叉或序列表示。
+
+## 模型方法
+
+- CatBoost、LightGBM、XGBoost 三模型 5 折 OOF。
+- Optuna 搜索最强单模型，最终选择 XGBoost Optuna50 MultiSeed。
+- 尝试均值融合、AUC 加权、rank averaging、OOF 权重搜索和 pseudo/fine blend，线上验证后回到最稳版本。
+
+验证上尽量使用 OOF 思路，避免只看一次线上提交。融合也不是机械平均，而是根据 OOF、public/private 表现和模型互补性来选择。
+
+## 结果分析
+
+- FE 版本相对 baseline 的提升很小，说明原始特征已经强，后续收益主要来自调参和 seed 稳定性。
+- 多 seed XGBoost 的 OOF AUC 达到 0.917168，是当前最稳定的泛化选择。
+- 线上验证中更激进的 fine pseudo blend 未继续涨分，因此最终保留可复现、风险更低的版本。
+
+## 如何复现
+
+安装依赖：
+
+```bash
+pip install -r requirements.txt
 ```
 
-## 输出文件说明
+复现时先从 Kaggle 下载原始数据到 README 或脚本约定的数据目录。部分仓库为了保持轻量，只保留最佳提交文件、实验日志和核心说明；如果仓库中存在 `src/`、`notebooks/` 或 `kaggle_kernel_*`，优先从这些入口运行训练。
 
-| 文件 | 说明 |
-|---|---|
-| `outputs/oof_xgb_optuna50_multiseed.csv` | 最佳模型在训练集上的 OOF 预测 |
-| `outputs/pred_xgb_optuna50_multiseed.csv` | 最佳模型在测试集上的预测 |
-| `outputs/submission_xgb_optuna50_multiseed.csv` | 当前最佳 Kaggle 提交文件 |
-| `outputs/experiment_log.csv` | 当前保留实验的简要日志 |
-| `outputs/best_result_summary.csv` | 当前最佳版本的结果检查摘要 |
+常见入口示例：
 
-## Submission 检查
+```bash
+python src/train_best.py
+# 或在 Kaggle 上运行 kaggle_kernel_* 中的 GPU kernel
+```
 
-当前最佳提交文件已检查：
+如果当前项目只保留了最佳产物，则可直接查看 `outputs/` 中的 OOF、prediction、submission 和实验摘要文件。
 
-| 检查项 | 结果 |
-|---|---|
-| 行数等于 `sample_submission.csv` | 通过 |
-| 列名和顺序一致 | 通过 |
-| 预测值在 `[0, 1]` | 通过 |
-| 缺失值 | 0 |
-| 无穷值 | 0 |
-| 预测最小值 | `0.0000748893` |
-| 预测最大值 | `0.9899883845` |
-| 预测均值 | `0.2181675594` |
-| 预测标准差 | `0.2761685134` |
+## 未来改进方向
 
-## 复现实验
+- 做更细的业务交叉特征：客户活跃度、费用压力、服务状态组合。
+- 尝试稳定 pseudo-label，但必须用 OOF 和线上反馈双重约束。
+- 补充 SHAP 分析，把流失驱动因素解释成业务语言。
 
-主要实验代码保留在：
+## 项目价值
 
-`notebooks/baseline.ipynb`
+这个项目可以体现三类能力：
 
-该 notebook 中包含：
-
-1. 数据读取与基础检查
-2. CatBoost baseline
-3. FE 特征工程版 CatBoost
-4. 三模型融合
-5. XGBoost Optuna
-6. XGBoost Optuna MultiSeed
-7. OOF 融合权重搜索
-8. 后续极限压榨实验记录
-
-## 当前结论
-
-线上验证后，继续做 fine pseudo blend 没有带来提升，因此项目当前回到稳定最佳版本：
-
-`outputs/submission_xgb_optuna50_multiseed.csv`
-
-后续如果继续冲分，建议优先从新特征工程或更强的 XGBoost 参数空间入手，而不是继续微调现有融合权重。
+- **建模能力**：能从 baseline 走到调参、融合和线上验证。
+- **特征工程能力**：能把业务直觉、数据分布和模型输入连接起来。
+- **复盘能力**：能说明为什么涨分、为什么不涨，以及下一步该往哪里优化。
